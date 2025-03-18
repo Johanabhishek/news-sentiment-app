@@ -10,25 +10,22 @@ nltk.download('vader_lexicon')
 sia = SentimentIntensityAnalyzer()
 
 def extract_news(company):
-    """Scrapes Google News for articles related to a company."""
-    url = f"https://news.google.com/search?q={company}&hl=en&gl=US&ceid=US:en"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    
-    response = requests.get(url, headers=headers)
+    url = f"https://news.google.com/search?q={company}"
+    response = requests.get(url)
     soup = BeautifulSoup(response.text, "html.parser")
 
-    articles = []
-    for item in soup.find_all("h3")[:10]:  # Get top 10 articles
-        title = item.text
-        link = "https://news.google.com" + item.a["href"][1:]  # Fix relative URL
-        articles.append({"title": title, "link": link})
-    
-    return articles
+    news_items = soup.find_all("article")  # Adjust selector if needed
+    news_list = []
 
-def analyze_sentiment(text):
-    """Performs sentiment analysis and returns Positive, Negative, or Neutral."""
-    score = sia.polarity_scores(text)["compound"]
-    return "Positive" if score > 0 else "Negative" if score < 0 else "Neutral"
+    for item in news_items:
+        if item.a:  # ✅ Check if <a> tag exists before accessing href
+            link = "https://news.google.com" + item.a["href"][1:]  # Fix relative URL
+            title = item.a.get_text(strip=True)
+            news_list.append({"title": title, "link": link})
+        else:
+            print("Skipping an article without a link")  # Debugging info
+
+    return news_list
 
 def generate_hindi_speech(text, filename="output.mp3"):
     """Converts text to Hindi speech."""
